@@ -39,3 +39,34 @@ This app can use GitHub Actions for CI. The following workflows are configured:
 ### License
 
 mit
+
+## A2 — Multi-Site & Configuration
+
+### Config Files Explanation
+
+site_config.json is used for site-specific settings such as database name,
+admin password, and developer_mode. Each site has its own site_config.json,
+so values here apply only to that site.
+
+common_site_config.json contains settings shared across all sites in the bench,
+such as Redis configuration and database host.
+
+If a secret is accidentally placed in common_site_config.json, it becomes
+accessible to every site on the bench, which is a security risk and may allow
+unauthorized access.
+
+Sensitive credentials should always be stored in the individual site's
+site_config.json to prevent cross-site exposure.
+
+### Bench Start Processes
+
+bench start launches four main processes:
+
+1. Web — handles incoming HTTP requests
+2. Worker — processes background jobs from the queue
+3. Scheduler — triggers scheduled tasks (cron jobs)
+4. SocketIO — manages real-time events and notifications
+
+If the worker process crashes, background jobs such as emails, report
+generation, and long-running tasks will stop processing and remain stuck in
+the queue until the worker restarts.

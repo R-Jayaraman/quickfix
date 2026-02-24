@@ -1,7 +1,7 @@
 app_name = "quickfix"
 app_title = "Quickfix"
 app_publisher = "ram"
-app_description = "quickfix work"
+app_description = "Device Repair Management System"
 app_email = "ram@gmail.com"
 app_license = "mit"
 
