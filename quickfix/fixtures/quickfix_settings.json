@@ -1,0 +1,12 @@
+[
+ {
+  "default_labour_charge": 500.0,
+  "docstatus": 0,
+  "doctype": "QuickFix Settings",
+  "low_stock_alert_enabled": 1,
+  "manager_email": "jayaramanoffl@gmail.com",
+  "modified": "2026-03-05 15:56:26.682901",
+  "name": "QuickFix Settings",
+  "shop_name": "Ram Service Center"
+ }
+]
