@@ -45,6 +45,7 @@
   {
    "fieldname": "specialization",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Specialization",
    "options": "Device Type"
   },
@@ -64,7 +65,7 @@
   },
   {
    "fieldname": "joining_date",
-   "fieldtype": "Data",
+   "fieldtype": "Date",
    "label": "Joining Date"
   },
   {
@@ -82,9 +83,10 @@
   }
  ],
  "grid_page_length": 50,
+ "image_field": "photo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-27 13:09:28.236058",
+ "modified": "2026-03-04 15:45:48.560541",
  "modified_by": "Administrator",
  "module": "Service Center",
  "name": "Technician",
