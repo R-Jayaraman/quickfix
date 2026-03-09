@@ -46,7 +46,6 @@ Users only see generic messages like “500: Uncaught Exception”.
 Full errors are stored in log files:
 
 - logs/web.error.log
-
 - logs/worker.error.log
 
 Admins can check these for debugging.
@@ -71,9 +70,7 @@ Job Card → tabJob Card
 ### DocStatus Values
 
 0 → Draft (editable)
-
 1 → Submitted (locked)
-
 2 → Cancelled (invalid)
 
 Frappe also prevents overwriting changes if another user modified the document meanwhile.
@@ -91,9 +88,7 @@ Updating another document inside validate must be done carefully, since save ope
 When adding a child row, Frappe auto-fills:
 
 parent — parent document name
-
 parenttype — parent DocType
-
 parentfield — field name in parent
 
 idx — row order
@@ -106,17 +101,12 @@ Renaming Linked Documents
 If a document is renamed using Frappe’s rename feature, all linked fields across the system update automatically.
 
 Track Changes
-
 Enabling Track Changes stores edit history:
-
 changed fields
-
 old vs new values
-
 who changed
 
 when
-
 Saved in Version records and shown in timeline.
 
 ### Unique Constraints
@@ -169,9 +159,7 @@ If exposed in APIs, it can leak sensitive data.
 Respects:
 
 role permissions
-
 custom filters
-
 sharing rules
 
 Recommended for public or whitelisted methods.
@@ -182,11 +170,92 @@ When merge=True is used, the old document is combined into another one and then 
 Problems this can cause:
 
 Original record is permanently lost
-
 All links now point to a different document
-
 Conflicting data may overwrite existing info
-
 Past records may become inaccurate
 
 Because of this, merging should only be done when both records actually refer to the same real person or item.
+
+### Execution Order — Controller & Hooks
+# Execution Order
+
+When a document is saved, methods run in this order:
+
+- Controller method (validate() inside the DocType Python file)
+
+- Specific DocType doc_events handler
+- Global "*" doc_events handler
+
+Controller always runs first.
+
+# If Both Raise ValidationError
+
+If the controller raises an error:
+
+- Execution stops immediately
+- Hook handlers will not run
+- Only the first error is shown to the user
+
+
+# If "*" and Specific DocType Are Both Registered
+
+Example:
+
+doc_events = {
+    "*": {
+        "validate": "quickfix.audit.log_change"
+    },
+    "Job Card": {
+        "validate": "quickfix.job_card_hooks.validate_job_card"
+    }
+}
+
+When saving a Job Card:
+
+- Controller validate() runs
+- validate_job_card (Job Card specific hook) runs
+- log_change (global "*" hook) runs
+
+both hooks execute.
+
+### F3 Difference Between app_include_js and web_include_js
+
+app_include_js is used for Desk interface customization for logged-in users.
+web_include_js is used for public website functionality for visitors and portal users.
+
+Desk scripts are not loaded on public pages, and website scripts are not loaded in the Desk interface.
+
+doctype_tree_js is used for DocTypes that contain hierarchical parent-child relationships.
+
+bench build --app quickfix  -  This command rebuilds static assets such as JavaScript and CSS files.
+
+# Jinja Context- Print Formats vs Web Pages
+Both Print Formats and Web Pages use Jinja templating, but their available contexts are different.
+Print Format Context
+Print formats are used to generate PDFs or printable documents.
+
+### F4 override_whitelisted_methods Hook
+override_whitelisted_methods is a hook-based approach in Frappe where you explicitly replace a whitelisted API method through hooks.py, making it visible, maintainable, and reversible.
+Monkey patching directly replaces a function at import time in Python, which is invisible to the framework, harder to track, and more brittle during upgrades.
+# When to Use Each
+Use override_whitelisted_methods when you want to safely customize a Frappe API endpoint using the framework’s extension mechanism.
+
+A signature mismatch occurs when the override method does not accept the same arguments as the original method.
+
+# When a TypeError Happens 
+A TypeError occurs when the overridden function is missing required parameters or cannot accept keyword arguments passed by the framework.
+
+# F5 Fieldname collision risk:
+If a Custom Field uses the same fieldname as a field added in a future Frappe update, 
+it can cause database conflicts like duplicate columns or override the framework field, leading to migration errors.
+
+# Patching order:
+Patches must be separate in patches.txt so Patch 1 runs first to create the field and Patch 2 runs afterward to use it; 
+merging them can break migrations if the field doesn’t exist when accessed.
+
+# G1 Safe Monkey Patch with Version Guard
+1. It prevents the monkey patch from being applied multiple times.
+
+2. __init__.py runs on every import, while a separate file keeps patches controlled and documented.
+
+3. it follows safer framework extension methods first and uses risky monkey patching only as a last resort.

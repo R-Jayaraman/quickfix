@@ -1,8 +1,12 @@
 import frappe
 
+
 def job_card_permission_query(user):
-    if "QF Technician" in frappe.get_roles(user):
-        return f"""
+	if user == "Administrator":
+		return ""
+
+	if "QF Technician" in frappe.get_roles(user):
+		return f"""
             EXISTS (
                 SELECT 1
                 FROM `tabTechnician` t
@@ -10,16 +14,15 @@ def job_card_permission_query(user):
                 AND t.user = '{user}'
             )
         """
-    return None
+
 
 def service_invoice_has_permission(doc, user):
+	if "QF Manager" in frappe.get_roles(user):
+		return True
 
-    if "QF Manager" in frappe.get_roles(user):
-        return True
+	job = frappe.get_doc("Job Card", doc.job_card)
 
-    job = frappe.get_doc("Job Card", doc.job_card)
+	if job.payment_status == "Paid":
+		return True
 
-    if job.payment_status == "Paid":
-        return True
-
-    return False
+	return False

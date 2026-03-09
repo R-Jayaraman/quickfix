@@ -247,23 +247,43 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 fixtures = [
-    {
-        "doctype": "Device Type",
-        "filters": [
-            ["name", "in", ["Smartphone", "Laptop", "Tablet"]]
-        ]
-    }
+	"Custom Field",
+	"Property Setter",
+	"Role",
+	"Workspace",
+	{"doctype": "Device Type", "filters": [["name", "in", ["Smartphone", "Laptop", "Tablet"]]]},
+	{"doctype": "QuickFix Settings"},
 ]
 
-fixtures = [
-    "Role",
-    "Custom DocPerm"
-]
+permission_query_conditions = {"Job Card": "quickfix.permissions.job_card_permission_query"}
 
-permission_query_conditions = {
-    "Job Card": "quickfix.permissions.job_card_permission_query"
+has_permission = {"Service Invoice": "quickfix.permissions.service_invoice_has_permission"}
+
+override_doctype_class = {"Job Card": "quickfix.overrides.custom_job_card.CustomJobCard"}
+
+doc_events = {
+	"*": {
+		"on_update": "quickfix.audit.audit_log",
+		"on_submit": "quickfix.audit.audit_log",
+		"on_cancel": "quickfix.audit.audit_log",
+	},
+	"Job Card": {"validate": "quickfix.job_card_hooks.validate_job_card"},
 }
 
-has_permission = {
-    "Service Invoice": "quickfix.permissions.service_invoice_has_permission"
+# after_install = "quickfix.setup.install"
+before_uninstall = "quickfix.setup.uninstall_check"
+extend_bootinfo = "quickfix.setup.extend_bootinfo"
+on_session_creation = "quickfix.session.log_login"
+on_logout = "quickfix.session.log_logout"
+app_include_js = "quickfix.bundle.js"
+
+jinja = {
+	"methods": ["quickfix.utils.jinja_methods.get_shop_name"],
+	"filters": ["quickfix.utils.jinja_filters.format_job_id"],
 }
+
+portal_menu_items = [{"title": "Track My Job", "route": "/track-job", "role": "Guest"}]
+
+override_whitelisted_methods = {"frappe.client.get_count": "quickfix.api.custom_get_count"}
+
+after_install = "quickfix.monkey_patches.apply_all"
