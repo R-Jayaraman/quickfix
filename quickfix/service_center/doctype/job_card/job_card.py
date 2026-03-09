@@ -3,142 +3,115 @@ from frappe.model.document import Document
 
 
 class JobCard(Document):
+	def validate(self):
+		self.phone_number_validate()
+		self.validate_technician_required()
+		self.calculate_parts_total()
+		self.set_default_labour_charge()
+		self.calculate_final_amount()
 
-   
-    def validate(self):
+	def validate_technician_required(self):
+		if self.status in ["In Repair", "Ready for Delivery", "Delivered"]:
+			if not self.assigned_technician:
+				frappe.throw("Assigned Technician is required")
 
-        if self.customer_phone and not self.customer_phone.isdigit():
-            frappe.throw("Customer phone must contain only digits")
+	def calculate_parts_total(self):
+		parts_total = 0
 
-        if self.customer_phone and len(self.customer_phone) != 10:
-            frappe.throw("Customer phone must be exactly 10 digits")
+		for row in self.parts_used:
+			row.total_price = (row.quantity or 0) * (row.unit_price or 0)
+			parts_total += row.total_price
 
-        if self.status in ["In Repair", "Ready for Delivery", "Delivered"]:
-            if not self.assigned_technician:
-                frappe.throw("Assigned Technician is required")
+		self.parts_total = parts_total
 
-        parts_total = 0
+	def set_default_labour_charge(self):
+		if not self.labour_charge:
+			settings = frappe.get_single("QuickFix Settings")
+			self.labour_charge = settings.default_labour_charge or 0
 
-        for row in self.parts_used:
-            row.total_price = (row.quantity or 0) * (row.unit_price or 0)
-            parts_total += row.total_price
+	def calculate_final_amount(self):
+		self.final_amount = self.parts_total + self.labour_charge
 
-        self.parts_total = parts_total
+	def before_submit(self):
+		self.validate_ready_status()
+		self.check_stock_availability()
 
-        if not self.labour_charge:
-            settings = frappe.get_single("QuickFix Settings")
-            self.labour_charge = settings.default_labour_charge or 0
+	def validate_ready_status(self):
+		if self.status != "Ready for Delivery":
+			frappe.throw("Job Card must be Ready for Delivery to submit")
 
-        self.final_amount = self.parts_total + self.labour_charge
+	def check_stock_availability(self):
+		for row in self.parts_used:
+			stock = frappe.db.get_value("Spare Part", row.part, "stock_qty") or 0
 
-    def before_submit(self):
+			if stock < row.quantity:
+				frappe.throw(f"Not enough stock for part {row.part}. Available: {stock}")
 
-        # Only Ready for Delivery allowed
-        if self.status != "Ready for Delivery":
-            frappe.throw("Job Card must be Ready for Delivery to submit")
+	def on_submit(self):
+		self.deduct_stock()
+		self.create_service_invoice()
+		self.send_realtime_notification()
+		self.enqueue_email_job()
 
-        # Check stock for each part
-        for row in self.parts_used:
+	def deduct_stock(self):
+		for row in self.parts_used:
+			stock = frappe.db.get_value("Spare Part", row.part, "stock_qty") or 0
+			new_stock = stock - row.quantity
 
-            stock = frappe.db.get_value(
-                "Spare Part",
-                row.part,
-                "stock_qty"
-            ) or 0
+			frappe.db.set_value("Spare Part", row.part, "stock_qty", new_stock, update_modified=False)
 
-            if stock < row.quantity:
-                frappe.throw(
-                    f"Not enough stock for part {row.part}. Available: {stock}"
-                )
+	def create_service_invoice(self):
+		invoice = frappe.get_doc(
+			{
+				"doctype": "Service Invoice",
+				"job_card": self.name,
+				"labour_charge": self.labour_charge,
+				"parts_total": self.parts_total,
+				"total_amount": self.final_amount,
+			}
+		)
 
-    def on_submit(self):
+		invoice.insert(ignore_permissions=True)
 
-        # Deduct stock
-        for row in self.parts_used:
+	def send_realtime_notification(self):
+		frappe.publish_realtime("job_ready", {"job_card": self.name}, user=self.owner)
 
-            stock = frappe.db.get_value(
-                "Spare Part",
-                row.part,
-                "stock_qty"
-            ) or 0
+	def enqueue_email_job(self):
+		frappe.enqueue("quickfix.api.send_job_ready_email", job_card=self.name)
 
-            new_stock = stock - row.quantity
+	def on_cancel(self):
+		self.set_cancelled_status()
+		self.restore_stock()
+		self.cancel_linked_invoice()
 
-            frappe.db.set_value(
-                "Spare Part",
-                row.part,
-                "stock_qty",
-                new_stock,
-                update_modified=False
-            )
-            # ignore_permissions is acceptable because
-            # this is system-driven stock deduction
+	def set_cancelled_status(self):
+		frappe.db.set_value("Job Card", self.name, "status", "Cancelled")
 
-        # Auto-create Service Invoice
-        invoice = frappe.get_doc({
-            "doctype": "Service Invoice",
-            "job_card": self.name,
-            "labour_charge": self.labour_charge,
-            "parts_total": self.parts_total,
-            "total_amount": self.final_amount
-        })
+	def restore_stock(self):
+		for row in self.parts_used:
+			stock = frappe.db.get_value("Spare Part", row.part, "stock_qty") or 0
 
-        invoice.insert(ignore_permissions=True)
+			frappe.db.set_value("Spare Part", row.part, "stock_qty", stock + row.quantity)
 
+	def cancel_linked_invoice(self):
+		invoices = frappe.get_all(
+			"Service Invoice", filters={"job_card": self.name}, fields=["name", "docstatus"]
+		)
+		for inv in invoices:
+			invoice = frappe.get_doc("Service Invoice", inv.name)
+			if invoice.docstatus == 1:
+				invoice.cancel()
 
-        # Realtime notification
-        frappe.publish_realtime(
-            "job_ready",
-            {"job_card": self.name},
-            user=self.owner
-        )
+	def on_trash(self):
+		self.validate_delete_allowed()
 
+	def validate_delete_allowed(self):
+		if self.status not in ["Draft", "Cancelled"]:
+			frappe.throw("Only Draft or Cancelled Job Cards can be deleted")
 
-        # Background email job
-        frappe.enqueue(
-            "quickfix.api.send_job_ready_email",
-            job_card=self.name
-        )
+	def phone_number_validate(self):
+		if self.customer_phone and len(self.customer_phone) != 10:
+			frappe.throw("Customer phone must be exactly 10 digits")
 
-    def on_cancel(self):
-
-        self.status = "Cancelled"
-
-        # Restore stock
-        for row in self.parts_used:
-
-            stock = frappe.db.get_value(
-                "Spare Part",
-                row.part,
-                "stock_qty"
-            ) or 0
-
-            frappe.db.set_value(
-                "Spare Part",
-                row.part,
-                "stock_qty",
-                stock + row.quantity
-            )
-
-        # Cancel linked invoice if exists
-        invoice_name = frappe.db.get_value(
-            "Service Invoice",
-            {"job_card": self.name},
-            "name"
-        )
-
-        if invoice_name:
-            invoice = frappe.get_doc("Service Invoice", invoice_name)
-            if invoice.docstatus == 1:
-                invoice.cancel()
-
-
-    def on_trash(self):
-
-        if self.status not in ["Draft", "Cancelled"]:
-            frappe.throw(
-                "Only Draft or Cancelled Job Cards can be deleted"
-            )
-
-    def on_update(self):
-        pass
+	def on_update(self):
+		pass
