@@ -11,9 +11,9 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class IntegrationTestDeviceType(IntegrationTestCase):
+class IntegrationTestAuditLog(IntegrationTestCase):
 	"""
-	Integration tests for DeviceType.
+	Integration tests for AuditLog.
 	Use this class for testing interactions between multiple components.
 	"""
 
