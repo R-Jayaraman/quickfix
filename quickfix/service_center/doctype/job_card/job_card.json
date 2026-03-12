@@ -49,9 +49,7 @@
   {
    "fieldname": "customer_phone",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Customer Phone",
-   "reqd": 1
+   "label": "Customer Phone"
   },
   {
    "fieldname": "customer_email",
@@ -188,17 +186,19 @@
    "label": "Remark"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nPending Diagnosis\nAwaiting Customer Approval\nIn Repair\nReady for Delivery\nDelivered\nCancelled"
+   "options": "Draft\nPending Diagnosis\nAwaiting Customer Approval\nIn Repair\nReady for Delivery\nDelivered\nCancelled",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-04 13:38:03.951557",
+ "modified": "2026-03-10 13:46:39.011477",
  "modified_by": "Administrator",
  "module": "Service Center",
  "name": "Job Card",

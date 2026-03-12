@@ -115,3 +115,22 @@ class JobCard(Document):
 
 	def on_update(self):
 		pass
+
+
+@frappe.whitelist()
+def mark_as_delivered(job_card_name):
+	doc = frappe.get_doc("Job Card", job_card_name)
+
+	if doc.status != "Ready for Delivery":
+		frappe.throw("Job must be Ready for Delivery before marking Delivered")
+
+	doc.status = "Delivered"
+	doc.save()
+
+
+@frappe.whitelist()
+def transfer_technician(job_card_name, technician):
+	doc = frappe.get_doc("Job Card", job_card_name)
+
+	doc.assigned_technician = technician
+	doc.save()
