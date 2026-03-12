@@ -72,8 +72,7 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "User",
-   "options": "User",
-   "set_only_once": 1
+   "options": "User"
   },
   {
    "depends_on": "eval:doc.status==\"On Leave\"",
@@ -86,7 +85,7 @@
  "image_field": "photo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-04 15:45:48.560541",
+ "modified": "2026-03-10 13:10:16.506217",
  "modified_by": "Administrator",
  "module": "Service Center",
  "name": "Technician",

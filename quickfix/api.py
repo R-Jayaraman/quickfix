@@ -109,3 +109,10 @@ def custom_get_count(doctype, filters=None, debug=False, cache=False):
 	from frappe.client import get_count
 
 	return get_count(doctype, filters, debug, cache)
+
+
+@frappe.whitelist()
+def mark_ready_for_delivery(job_card):
+	frappe.db.set_value("Job Card", job_card, "status", "Ready for Delivery")
+	frappe.db.commit()
+	return True

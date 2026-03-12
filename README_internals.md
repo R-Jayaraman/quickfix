@@ -259,3 +259,39 @@ merging them can break migrations if the field doesn’t exist when accessed.
 2. __init__.py runs on every import, while a separate file keeps patches controlled and documented.
 
 3. it follows safer framework extension methods first and uses risky monkey patching only as a last resort.
+
+# H1 Job Card Form Script
+
+1.frappe.call is asynchronous, so the validation event finishes before the server response returns.
+This means validation cannot reliably depend on the server result.
+
+2.These events run after the form loads and allow asynchronous server calls safely.
+They do not interfere with the save/validation lifecycle.
+
+# H3 List View & Tree View
+1.A Tree DocType in Frappe is used to represent hierarchical data where records have parent-child relationships.
+2.doctype_tree_js is a client-side JavaScript file used to customize the behavior of a Tree DocType in Frappe.
+
+# H4 Client Script DocType vs Shipped JS
+Client Script DocType is used by consultants for quick UI customizations directly from the system without deployment. Shipped JS is used by app developers for stable, version-controlled logic inside the application code.
+
+Hiding a field in JavaScript only affects the user interface, not the backend data, so the field’s value can still be accessed through API calls, database queries, or developer tools, meaning it does not provide real security.
+
+# I1 Query Report with SQL Safety
+Issue (f-string SQL):
+Using f-strings in SQL directly inserts user input into the query, which can lead to SQL injection vulnerabilities.
+
+Solution (Parameterized pattern):
+Using parameterized queries like %(device_type)s separates user input from SQL code, preventing SQL injection and making the query secure.
+
+![alt text](image-1.png)
+Index usage:
+key: status_index, which confirms that the database is using the index on the status column.
+This improves performance because the query retrieves rows using the index instead of scanning the entire table.
+
+# I4 Prepared Report
+1.Prepared Reports run in the background using a worker process and store the generated results for later use. They are useful for reports with large datasets or complex queries.
+
+Real-time Script Reports run immediately when opened and show the latest data. They may load slowly if the dataset is large.
+
+2.Caching risk occurs when underlying data changes after a report is prepared, causing users to see outdated information until the report is regenerated.

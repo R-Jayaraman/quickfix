@@ -267,7 +267,7 @@ doc_events = {
 		"on_submit": "quickfix.audit.audit_log",
 		"on_cancel": "quickfix.audit.audit_log",
 	},
-	"Job Card": {"validate": "quickfix.job_card_hooks.validate_job_card"},
+	# "Job Card": {"validate": "quickfix.job_card_hooks.validate_job_card"},
 }
 
 # after_install = "quickfix.setup.install"
@@ -276,6 +276,9 @@ extend_bootinfo = "quickfix.setup.extend_bootinfo"
 on_session_creation = "quickfix.session.log_login"
 on_logout = "quickfix.session.log_logout"
 app_include_js = "quickfix.bundle.js"
+
+
+doctype_list_js = {"Job Card": "job_card_list.js"}
 
 jinja = {
 	"methods": ["quickfix.utils.jinja_methods.get_shop_name"],

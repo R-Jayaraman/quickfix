@@ -996,7 +996,7 @@
   "sequence_id": 22.0,
   "shortcuts": [],
   "title": "Welcome Workspace",
-  "type": null
+  "type": "Workspace"
  },
  {
   "app": "frappe",
