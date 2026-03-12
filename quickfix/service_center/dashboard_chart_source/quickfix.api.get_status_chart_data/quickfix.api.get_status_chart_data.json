@@ -1,0 +1,13 @@
+{
+ "creation": "2026-03-12 12:20:02.577628",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart Source",
+ "idx": 0,
+ "modified": "2026-03-12 12:20:02.577628",
+ "modified_by": "Administrator",
+ "module": "Service Center",
+ "name": "quickfix.api.get_status_chart_data",
+ "owner": "Administrator",
+ "source_name": "quickfix.api.get_status_chart_data",
+ "timeseries": 0
+}
