@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 import frappe
 from frappe.query_builder import DocType
+from frappe.utils.data import getdate, today
 
 
 @frappe.whitelist()
@@ -116,3 +117,42 @@ def mark_ready_for_delivery(job_card):
 	frappe.db.set_value("Job Card", job_card, "status", "Ready for Delivery")
 	frappe.db.commit()
 	return True
+
+
+def check_low_stock():
+	last_run = frappe.db.exists("Audit Log", {"action": "low_stock_check", "creation": [">=", today()]})
+
+	if last_run:
+		return  # already ran today
+
+
+def cancel_old_draft_jobs():
+	frappe.db.sql("""
+        UPDATE `tabJob Card`
+        SET status = 'Cancelled'
+        WHERE status = 'Draft'
+        LIMIT 1000
+    """)
+	frappe.db.commit()
+
+
+@frappe.whitelist(allow_guest=True)
+def get_job_by_phone():
+	ip = frappe.local.request_ip
+
+	cache_key = f"rate_limit:{ip}"
+
+	count = frappe.cache().get_value(cache_key) or 0
+	count = int(count)
+
+	if count >= 10:
+		frappe.throw("Too many requests. Try again later.")
+
+	frappe.cache().set_value(cache_key, count + 1, expires_in_sec=60)
+
+	phone = frappe.form_dict.get("phone")
+
+	job = frappe.get_all(
+		"Job Card", filters={"customer_phone": phone}, fields=["name", "status", "final_amount"]
+	)
+	return job

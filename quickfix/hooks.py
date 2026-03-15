@@ -280,13 +280,15 @@ app_include_js = "quickfix.bundle.js"
 
 doctype_list_js = {"Job Card": "job_card_list.js"}
 
-jinja = {
-	"methods": ["quickfix.utils.jinja_methods.get_shop_name"],
-	"filters": ["quickfix.utils.jinja_filters.format_job_id"],
-}
-
 portal_menu_items = [{"title": "Track My Job", "route": "/track-job", "role": "Guest"}]
 
 override_whitelisted_methods = {"frappe.client.get_count": "quickfix.api.custom_get_count"}
 
 after_install = "quickfix.monkey_patches.apply_all"
+
+jinja = {
+	"methods": ["quickfix.utils.utils.get_shop_name", "quickfix.utils.utils.generate_qr"],
+	"filters": ["quickfix.utils.jinja_filters.format_job_id"],
+}
+
+scheduler_events = {"daily": ["quickfix.jobs.check_low_stock"]}

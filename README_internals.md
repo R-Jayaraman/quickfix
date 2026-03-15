@@ -295,3 +295,92 @@ This improves performance because the query retrieves rows using the index inste
 Real-time Script Reports run immediately when opened and show the latest data. They may load slowly if the dataset is large.
 
 2.Caching risk occurs when underlying data changes after a report is prepared, causing users to see outdated information until the report is regenerated.
+
+# I5 Report Builder & Custom Report
+1. Report Builder is appropriate for simple reports that list fields from a single DocType with basic filters and no custom logic.
+
+2.you must use a Script Report when the report requires complex queries, joins, calculations, or custom business logic,
+using Report Builder for a large multi-table analytical report in production would be a mistake because it would be inefficient and inaccurat
+
+# J1 
+Calling frappe.get_all() directly inside a Jinja template is not recommended because it mixes database logic with the presentation layer and can slow down rendering.
+
+Instead, pre-compute the data in before_print(), attach it to self (e.g., self.precomputed_field), and then reference it in the template as doc.precomputed_field to keep logic and presentation clean.
+
+# J2 Raw Print vs HTML to PDF
+Raw printing (ESC/POS) sends direct printer commands to a thermal printer to control text and formatting, while WeasyPrint HTML-PDF rendering converts HTML and CSS into a PDF before printing.
+
+Examples of CSS that work in browsers but often fail in WeasyPrint include display: flex, display: grid, and position: fixed.
+
+Without format_value(), a Currency field prints the raw number without currency formatting.
+
+# K1 - Background Jobs: Queues, Timeouts, Progress
+
+default – Normal background tasks of medium duration; used when the job is not extremely quick or very heavy.
+
+short – Very fast tasks (emails, notifications) so they don’t wait behind heavy jobs.
+
+long – Heavy or long-running jobs (reports, bulk processing, imports) that may take several minutes.
+
+
+By default, Frappe does not retry failed background jobs (0 retries).
+If a job fails, it is immediately moved to the RQ Failed Jobs registry and logged in Error Log unless retries are explicitly configured.
+
+# K3 Fix the N+1 Query Problem
+
+job_cards = frappe.get_all(
+    "Job Card",
+    fields=[
+        "name",
+        "assigned_technician",
+        "assigned_technician.technician_name",
+        "assigned_technician.phone"
+    ]
+)
+
+for jc in job_cards:
+    print(jc.technician_name, jc.phone)
+
+# Task B - Bulk operations:
+
+bulk insert is much faster
+![alt text](image.png)
+
+# Task C – Indexing
+
+3.Why not index every field?
+Too many indexes slow down INSERT, UPDATE, and DELETE operations because every index must be updated.
+Over-indexing also increases storage and memory usage, reducing overall database performance.
+
+# L1 - REST Resource API & Custom API
+
+1.GET Method - list Job Cards
+![alt text](image-2.png)
+
+2.GET Method - single doc
+![alt text](image-3.png)
+
+3.POST - Create a part
+![alt text](image-6.png)
+
+4.PUT - Update a field
+![alt text](image-7.png)
+
+5.DELETE - Delete it
+![alt text](image-8.png)
+
+GET /api/resource/Job Card returns a list of Job Cards, and GET /api/resource/Job Card/JC-0001 returns a single Job Card document.
+POST /api/resource/Spare Part creates a part, PUT /api/resource/Spare Part/PART-0001 updates it, and DELETE /api/resource/Spare Part/PART-0001 removes the record.
+
+
+Session cookie authentication uses a browser login session (sid) and is mainly used for web browser access.
+Token authentication uses API key and secret in headers and is used for server-to-server or external application integrations.
+
+
+# Task D - Rate limiting & abuse protection:
+
+1.Unauthorized Data Access: With allow_guest=True, attackers can access endpoints without authentication and may retrieve sensitive information if proper permission checks are missing.
+
+2.Abuse & Spam Requests: Attackers can repeatedly call the endpoint to perform actions (e.g., form submissions or resource creation), leading to spam, database pollution, or service abuse.
+
+3.Enumeration & Information Leakage: Public endpoints can be probed to discover valid IDs, users, or system structure, helping attackers map the application for further attacks.
