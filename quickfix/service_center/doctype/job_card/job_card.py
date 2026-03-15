@@ -77,7 +77,7 @@ class JobCard(Document):
 		frappe.publish_realtime("job_ready", {"job_card": self.name}, user=self.owner)
 
 	def enqueue_email_job(self):
-		frappe.enqueue("quickfix.api.send_job_ready_email", job_card=self.name)
+		frappe.enqueue("quickfix.api.send_job_ready_email", job_card=self.name, queue="short")
 
 	def on_cancel(self):
 		self.set_cancelled_status()
@@ -115,6 +115,9 @@ class JobCard(Document):
 
 	def on_update(self):
 		pass
+
+	def before_print(self, print_settings=None):
+		self.print_summary = f"{self.customer_name} - {self.device_brand} {self.device_model}"
 
 
 @frappe.whitelist()
