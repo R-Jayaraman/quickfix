@@ -68,6 +68,7 @@ class JobCard(Document):
 				"labour_charge": self.labour_charge,
 				"parts_total": self.parts_total,
 				"total_amount": self.final_amount,
+				"payment_status": "Unpaid",
 			}
 		)
 
@@ -90,31 +91,25 @@ class JobCard(Document):
 	def restore_stock(self):
 		for row in self.parts_used:
 			stock = frappe.db.get_value("Spare Part", row.part, "stock_qty") or 0
-
 			frappe.db.set_value("Spare Part", row.part, "stock_qty", stock + row.quantity)
 
 	def cancel_linked_invoice(self):
 		invoices = frappe.get_all(
 			"Service Invoice", filters={"job_card": self.name}, fields=["name", "docstatus"]
 		)
+
 		for inv in invoices:
 			invoice = frappe.get_doc("Service Invoice", inv.name)
 			if invoice.docstatus == 1:
 				invoice.cancel()
 
 	def on_trash(self):
-		self.validate_delete_allowed()
-
-	def validate_delete_allowed(self):
 		if self.status not in ["Draft", "Cancelled"]:
 			frappe.throw("Only Draft or Cancelled Job Cards can be deleted")
 
 	def phone_number_validate(self):
 		if self.customer_phone and len(self.customer_phone) != 10:
 			frappe.throw("Customer phone must be exactly 10 digits")
-
-	def on_update(self):
-		pass
 
 	def before_print(self, print_settings=None):
 		self.print_summary = f"{self.customer_name} - {self.device_brand} {self.device_model}"
@@ -135,5 +130,12 @@ def mark_as_delivered(job_card_name):
 def transfer_technician(job_card_name, technician):
 	doc = frappe.get_doc("Job Card", job_card_name)
 
+	tech_device_type = frappe.db.get_value("Technician", technician, "specialization")
+
+	if tech_device_type != doc.device_type:
+		frappe.throw(f"This technician handles {tech_device_type} devices only.")
+
 	doc.assigned_technician = technician
 	doc.save()
+
+	frappe.msgprint("Technician transferred successfully")
