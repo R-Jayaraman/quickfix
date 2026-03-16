@@ -70,3 +70,5 @@ bench start launches four main processes:
 If the worker process crashes, background jobs such as emails, report
 generation, and long-running tasks will stop processing and remain stuck in
 the queue until the worker restarts.
+
+https://drive.google.com/drive/folders/1j7-HuFlPsB3Q10qsP8sm0Z445l2SDiwF?usp=sharing
